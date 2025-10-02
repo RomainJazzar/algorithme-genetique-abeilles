@@ -1,82 +1,188 @@
+🐝 Miel & Abeilles — Optimisation par Algorithmes Génétiques
 
-# Miel & Abeilles — Algorithme génétique sur un TSP ruche→fleurs→ruche
+« Rien en biologie n’a de sens sauf à la lumière de l’évolution. » — Theodosius Dobzhansky
 
-> « Rien en biologie n’a de sens sauf à la lumière de l’évolution. » — Dobzhansky
+🌍 Contexte & Problématique
 
-## Problème
-Une ruche en (500,500) doit visiter **toutes** les fleurs d’un champ (coordonnées fournies) **une seule fois**, puis **revenir** à la ruche, en **minimisant** le temps de parcours (≈ distance si vitesse constante). C’est un **TSP**.
+Une colonie d’abeilles s’installe dans un pommier sauvage, au cœur d’un champ rempli de pissenlits et de sauges des prés. Leur survie dépend de leur capacité à parcourir efficacement ce champ pour butiner et nourrir la ruche.
 
-## Modèle & Représentation
-- **Individu (abeille)** : permutation des indices des fleurs (ordre de visite).
-- **Fitness** : distance totale ruche→fleurs(order)→ruche (à **minimiser**).
+La ruche est située au point fixe (500, 500).
 
-## Algorithme (Sélection naturelle numérique)
-- **Sélection** : tournoi *k*=3 (ou roulette).
-- **Croisement** : OX (Ordered Crossover) ou PMX (Partially Mapped Crossover).
-- **Mutation** : inversion (ou swap), taux par individu (par défaut 3%).
-- **Élitisme** : on conserve les ~3% meilleurs intacts.
-- **Mutation adaptative (option)** : augmente si la convergence stagne.
+Les abeilles doivent visiter toutes les fleurs une fois et revenir à la ruche.
 
-## Fichiers
-- `beehive.py` : Field, Bee, BeehiveGA (moteur AG + généalogie).
-- `main.py` : chargement des données, exécution, **visualisations** :
-  - `best_path.png` : points (fleurs) + chemin de la **meilleure abeille**.
-  - `convergence.png` : distances *best* et *moyennes* par génération.
-  - `genealogy.png` : arbre d’ascendance du meilleur individu.
-- `flowers.csv` : coordonnées des fleurs (*remplacer le fichier de démo*).
+Le défi : minimiser la distance totale parcourue (équivalent au temps).
 
-## Données (ETL minimal & RGPD)
-- Format : CSV avec colonnes `x,y` (et optionnellement `id`).
-- `main.py` valide la présence de `x,y` et supprime les `NaN`.
-- Pas de données personnelles → conformité RGPD triviale. Traçabilité assurée via `results/runs/*` (params + métriques).
+C’est un problème classique connu sous le nom de Voyageur de commerce (TSP).
 
-## Installation & Exécution
-```bash
-# (Optionnel) créer un venv puis installer numpy, pandas, matplotlib
-python -m venv .venv && source .venv/bin/activate  # Windows: .venv\Scripts\activate
-pip install numpy pandas matplotlib
+🎯 Objectifs du projet
 
-# Dans le dossier du projet
-python main.py --flowers flowers.csv --generations 600 --pop-size 100 \
-  --selection tournament --tournament-k 3 --crossover OX --mutation-rate 0.03 \
-  --mutation-op inversion --elitism-rate 0.03 --adaptive-mutation --seed 42
-```
+Implémenter une sélection naturelle numérique via un algorithme génétique (AG).
 
-Les sorties sont écrites dans `results/runs/run-YYYYMMDD-HHMMSS/` :
-- `best_path.png` — chemin final
-- `convergence.png` — courbe d’évolution
-- `genealogy.png` — arbre généalogique
-- `metrics.csv` — meilleures/moyennes par génération
-- `params.json` — tous les paramètres d’exécution
+Permettre à la colonie de s’améliorer génération après génération.
 
-## Justification des choix
-- **Permutation** : garantit la visite unique de chaque fleur.
-- **Fitness = distance** : correspond au “temps de parcours” demandé.
-- **OX/PMX** : crossovers adaptés aux permutations (pas de duplications).
-- **Inversion** : mutation efficace pour TSP, corrige les « zigzags ».
-- **Tournoi** : robuste, simple, peu sensible à l’échelle des fitness.
-- **Élitisme** : empêche la régression, accélère la convergence.
-- **Mutation adaptative** : limite le blocage dans un optimum local.
+Comparer différents paramétrages (mutation fixe/adaptative, sélection, crossover, élitisme).
 
-## Comparaisons à réaliser (expérimentation)
-- Mutation : 1% vs 3% vs 5% vs adaptatif.
-- Sélection : tournoi (k=3) vs roulette.
-- Crossover : OX vs PMX.
-- Élitisme : 1% vs 3% vs 5%.
-- Population : 50 vs 100 vs 150.
+Produire des visualisations accessibles et pédagogiques :
 
-Comparer **meilleure distance**, **distance moyenne**, **vitesse de convergence** et **stabilité** (variance). Documenter le **paramétrage retenu**.
+chemin de la meilleure abeille,
 
-## Accessibilité (WCAG) & Présentation
-- Titres, axes, légendes sur chaque figure.
-- Police et tailles lisibles ; contrastes par défaut (Matplotlib).
-- Dans les slides : alt‑text pour les images, ordre logique et synthétique.
+évolution des performances,
 
-## Pistes d’amélioration (veille)
-- 2‑opt/3‑opt en post‑traitement pour affiner un tour.
-- Recuit simulé, recherche tabou, ACO (colonies de fourmis), PSO.
-- Hybridation AG + heuristiques locales.
+arbre généalogique.
 
----
+Fournir un dépôt GitHub structuré et une présentation claire pour un public technique comme non technique.
 
-**Note** : Remplacez `flowers.csv` par le CSV des coordonnées fourni par l’énoncé (la démo incluse est aléatoire).
+🧩 Modélisation du problème Représentation des individus
+
+Une abeille = un ordre de visite des fleurs (permutation des indices).
+
+Exemple : [3, 7, 0, 1, 4] → ruche → fleur 3 → fleur 7 → … → ruche.
+
+Fonction de fitness
+
+Fitness = distance totale du parcours :
+
+ruche → fleurs[ordre] → ruche
+
+Objectif : minimiser cette distance (plus elle est petite, plus l’abeille est "fit").
+
+Contraintes
+
+Chaque fleur doit être visitée exactement une fois.
+
+Le trajet doit commencer et finir à la ruche.
+
+🧬 Algorithme génétique (AG)
+
+Un AG est une heuristique inspirée de l’évolution naturelle :
+
+Population initiale : génération d’abeilles avec des chemins aléatoires.
+
+Évaluation : calcul de la fitness (distance totale).
+
+Sélection : choix des parents (tournoi ou roulette).
+
+Croisement : recombinaison des ordres (OX ou PMX).
+
+Mutation : petites variations (inversion ou swap).
+
+Élitisme : conservation des meilleurs individus.
+
+Répétition : itération sur plusieurs générations.
+
+⚙️ Paramètres clés
+
+Taille de population : 100 (conformément à l’énoncé).
+
+Sélection :
+
+Tournoi : on choisit k=3 au hasard, le meilleur gagne.
+
+Roulette : proba proportionnelle à 1/fitness.
+
+Croisement (crossover) :
+
+OX (Ordered Crossover) : copie un segment et complète dans l’ordre.
+
+PMX (Partially Mapped Crossover) : mapping entre segments.
+
+Mutation :
+
+Inversion : inverse un sous-segment.
+
+Swap : échange deux fleurs.
+
+Taux de mutation :
+
+Fixe (ex. 3%)
+
+Adaptatif : augmente si stagnation trop longue.
+
+Élitisme : ~3% des meilleurs conservés.
+
+📊 Visualisations générées
+
+Chemin de la meilleure abeille
+
+Convergence de l’AG (distance moyenne et meilleure par génération)
+
+Arbre généalogique du meilleur individu
+
+📂 Structure du dépôt miel-abeilles/ ├─ beehive.py # Classes Field, Bee, BeehiveGA (moteur AG) ├─ main.py # Simulation + visualisations ├─ flowers.csv # Coordonnées des fleurs (extrait du Google Sheet) ├─ results/ # Résultats expérimentaux │ └─ runs/run-YYYYMMDD-HHMMSS/ │ ├─ best_path.png │ ├─ convergence.png │ ├─ genealogy.png │ ├─ metrics.csv │ └─ params.json ├─ README.md # Documentation complète └─ slides/ # Présentation (PowerPoint/Keynote/PDF)
+
+🚀 Installation & Exécution Prérequis
+
+Python 3.9+
+
+Packages : numpy, pandas, matplotlib
+
+Installation git clone https://github.com/username/miel-abeilles.git cd miel-abeilles pip install -r requirements.txt
+
+Exécution simple python main.py --flowers flowers.csv --generations 600 --pop-size 100
+--selection tournament --tournament-k 3
+--crossover OX --mutation-rate 0.03 --mutation-op inversion
+--elitism-rate 0.03 --adaptive-mutation --seed 42
+
+Les résultats seront sauvegardés dans results/runs/run-YYYYMMDD-HHMMSS/.
+
+🔬 Expérimentations à réaliser
+
+Comparer les effets de différents paramétrages :
+
+Mutation : 1% vs 3% vs 5% vs adaptatif
+
+Sélection : tournoi vs roulette
+
+Crossover : OX vs PMX
+
+Élitisme : 1% vs 3% vs 5%
+
+Population : 50 vs 100 vs 150
+
+Mesures à observer :
+
+meilleure distance atteinte
+
+distance moyenne
+
+vitesse de convergence
+
+variance (stabilité)
+
+📚 Vulgarisation (pour non spécialistes)
+
+Un algorithme génétique, c’est comme une colonie d’abeilles :
+
+Les meilleures butineuses montrent la voie (sélection).
+
+On mélange leur expérience pour produire des descendants (croisement).
+
+On garde toujours une part d’imprévu (mutation).
+
+On s’assure de ne jamais perdre les plus fortes (élitisme).
+
+👉 Génération après génération, la colonie devient plus rapide.
+
+🔮 Perspectives & Améliorations
+
+Ajouter une heuristique locale (2-opt/3-opt) pour affiner les trajets.
+
+Explorer d’autres heuristiques :
+
+Recuit simulé (SA)
+
+Recherche tabou
+
+Colonies de fourmis (ACO)
+
+Optimisation par essaim particulaire (PSO)
+
+Lancer en parallèle plusieurs colonies (multi-AG).
+
+Intégrer une interface graphique interactive.
+
+👥 Auteurs
+
+Projet réalisé dans le cadre du Bachelor Intelligence Artificielle — La Plateforme (Marseille).
+
+Romain Jazzar et son équipe 🐝
