@@ -1,0 +1,16 @@
+{
+  "flowers": "flowers.csv",
+  "generations": 600,
+  "pop_size": 100,
+  "selection": "tournament",
+  "tournament_k": 3,
+  "crossover": "OX",
+  "mutation_rate": 0.03,
+  "mutation_op": "inversion",
+  "elitism_rate": 0.03,
+  "adaptive_mutation": true,
+  "seed": 42,
+  "outdir": "grid_results\\xo-ox",
+  "genealogy": "lineage",
+  "max_edges": 2000
+}
